@@ -24,3 +24,18 @@
  #wcm .quote{max-height:none!important;font-size:11px!important}
  #wcm .quote b{display:inline!important;margin-left:6px}
 }
+
+/* V54 — yatay: ince üst çubuk + hafif menü (dikey etkilenmez) */
+@media (orientation:landscape) and (max-height:520px){
+ #hud{min-height:30px!important;padding-top:2px!important;padding-bottom:2px!important;gap:5px!important}
+ #hud .chip{padding:2px 8px!important;font-size:13px!important;min-height:0!important;line-height:1.2}
+ #hud .chip img,#hud .chip .fl{height:16px!important}
+ #hud .chip button,#hud .plus{min-width:22px!important;height:22px!important;padding:0 6px!important}
+}
+@media (pointer:coarse){
+ #wcm .grain,#wcm .vig{display:none!important}
+}
+@media (orientation:landscape) and (max-height:520px){
+ #hud .hb,#hud .v15m{width:32px!important;height:32px!important;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;font-size:16px!important}
+ #hud .hb svg,#hud .v15m svg{width:16px!important;height:16px!important}
+}

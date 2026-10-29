@@ -155,8 +155,8 @@
       scene.add(new T3.AmbientLight(0x4a3040, .9));
       globe = new T3.Group(); scene.add(globe); spin = new T3.Group(); globe.add(spin);
       var cs = earthCanvases(sv), map = new T3.CanvasTexture(cs[0]), glow = new T3.CanvasTexture(cs[1]);
-      map.colorSpace = T3.SRGBColorSpace; glow.colorSpace = T3.SRGBColorSpace; map.anisotropy = glow.anisotropy = 2;
-      var earth = new T3.Mesh(new T3.SphereGeometry(1, 64, 48), new T3.MeshStandardMaterial({ map: map, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: .9, roughness: .55, metalness: .45 }));
+      map.colorSpace = T3.SRGBColorSpace; glow.colorSpace = T3.SRGBColorSpace; map.anisotropy = glow.anisotropy = 2; if (coarse) { map.generateMipmaps = glow.generateMipmaps = false; map.minFilter = glow.minFilter = T3.LinearFilter; }
+      var earth = new T3.Mesh(new T3.SphereGeometry(1, coarse ? 48 : 64, coarse ? 32 : 48), (coarse ? new T3.MeshLambertMaterial({ map: map, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: .9 }) : new T3.MeshStandardMaterial({ map: map, emissiveMap: glow, emissive: 0xffffff, emissiveIntensity: .9, roughness: .55, metalness: .45 })));
       spin.add(earth);
       // atmosfer
       var atm = new T3.Mesh(new T3.SphereGeometry(1.2, 40, 28), new T3.ShaderMaterial({
@@ -179,7 +179,7 @@
       });
       // fetih okları
       var pts = (window.R || []).filter(function (r) { return r.c; }), spr = sprite('rgba(255,120,80,1)'), spg = sprite('rgba(255,220,140,1)');
-      for (var i = 0; i < 9; i++) {
+      for (var i = 0; i < (coarse ? 6 : 9); i++) {
         var geo = new T3.BufferGeometry(); geo.setAttribute('position', new T3.BufferAttribute(new Float32Array(60 * 3), 3));
         var line = new T3.Line(geo, new T3.LineBasicMaterial({ color: 0xff6a4a, transparent: true, opacity: .9, blending: T3.AdditiveBlending, depthWrite: false }));
         var head = new T3.Sprite(new T3.SpriteMaterial({ map: spg, blending: T3.AdditiveBlending, transparent: true, depthWrite: false })); head.scale.set(.1, .1, 1);
@@ -187,11 +187,11 @@
         spin.add(line, head, dst); arcs.push({ line: line, geo: geo, head: head, dst: dst, t: -i * .9, life: 4.6, pts: pts }); newArc(arcs[i]);
       }
       // yıldızlar
-      var sp = [], i2; for (i2 = 0; i2 < 1400; i2++) { var u = Math.random() * 6.283, v = Math.acos(2 * Math.random() - 1), rr = 12 + Math.random() * 20; sp.push(rr * Math.sin(v) * Math.cos(u), rr * Math.cos(v), rr * Math.sin(v) * Math.sin(u)); }
+      var sp = [], i2; for (i2 = 0; i2 < (coarse ? 700 : 1400); i2++) { var u = Math.random() * 6.283, v = Math.acos(2 * Math.random() - 1), rr = 12 + Math.random() * 20; sp.push(rr * Math.sin(v) * Math.cos(u), rr * Math.cos(v), rr * Math.sin(v) * Math.sin(u)); }
       var sg = new T3.BufferGeometry(); sg.setAttribute('position', new T3.Float32BufferAttribute(sp, 3));
       stars = new T3.Points(sg, new T3.PointsMaterial({ size: .06, color: 0xcdb98a, transparent: true, opacity: .7, sizeAttenuation: true, depthWrite: false })); scene.add(stars);
       // kor/kıvılcımlar
-      var ep = [], ev = []; for (i2 = 0; i2 < 160; i2++) { ep.push((Math.random() - .5) * 9, (Math.random() - .5) * 6, (Math.random() - .5) * 4); ev.push(.1 + Math.random() * .25); }
+      var ep = [], ev = []; for (i2 = 0; i2 < (coarse ? 80 : 160); i2++) { ep.push((Math.random() - .5) * 9, (Math.random() - .5) * 6, (Math.random() - .5) * 4); ev.push(.1 + Math.random() * .25); }
       var eg = new T3.BufferGeometry(); eg.setAttribute('position', new T3.Float32BufferAttribute(ep, 3)); eg.userData.v = ev;
       embers = new T3.Points(eg, new T3.PointsMaterial({ size: .09, map: spr, color: 0xffa060, transparent: true, opacity: .8, blending: T3.AdditiveBlending, depthWrite: false })); scene.add(embers);
       try { renderer.compile(scene, camera); renderer.render(scene, camera); } catch (e2) { }
@@ -219,7 +219,9 @@
   }
   function fit() {
     if (!ready || !root) return; W = root.clientWidth || window.innerWidth; H = root.clientHeight || window.innerHeight;
-    renderer.setSize(W, H, false); camera.aspect = W / H; camera.updateProjectionMatrix();
+    var _pr = Math.max(.6, Math.min(COARSE ? 1 : 1.5, window.devicePixelRatio || 1, Math.sqrt((COARSE ? 330000 : 700000) / (W * H))));
+    if (W !== fW || H !== fH || Math.abs(_pr - fR) > .01) { fW = W; fH = H; fR = _pr; try { renderer.setPixelRatio(_pr); } catch (e) { } renderer.setSize(W, H, false); }   /* V56: gereksiz yeniden boyutlandırma yok (küre yaklaşırken takılma) */
+    camera.aspect = W / H; camera.updateProjectionMatrix();
     // Kamera yakınlaşma animasyonunda z değişir; yerleşim her zaman son mesafeye (3.8) göre hesaplanır
     var hh = Math.tan(20 * Math.PI / 180) * 3.8, hw = hh * camera.aspect, wide = W > 720 && W / H > 1.05, ppu = (H / 2) / hh;
     if (wide) {
@@ -234,7 +236,7 @@
   }
   function frame(t) {
     raf = requestAnimationFrame(frame); if (!ready) return;
-    if (COARSE && t - lastR < 30) return; lastR = t;
+    if (COARSE && t - lastR < 40) return; lastR = t;
     var dt = Math.min(.05, (t - clock0) / 1000 || .016); clock0 = t;
     if (!drag.on) { rotY += dt * .07 + drag.vx * .9; drag.vx *= .94; rotX += (.28 - rotX) * dt * .4; }
     par.x += (par.tx - par.x) * .04; par.y += (par.ty - par.y) * .04;
@@ -244,12 +246,12 @@
     var ep = embers.geometry.attributes.position, ev = embers.geometry.userData.v;
     for (var i = 0; i < ev.length; i++) { var y = ep.getY(i) + ev[i] * dt; if (y > 3.2) { y = -3.2; ep.setX(i, (Math.random() - .5) * 9); } ep.setY(i, y); ep.setX(i, ep.getX(i) + Math.sin(t / 1400 + i) * dt * .06); }
     ep.needsUpdate = true;
-    arcs.forEach(function (a) { stepArc(a, dt); });
+    if (!COARSE || (fc & 1)) arcs.forEach(function (a) { stepArc(a, COARSE ? dt * 2 : dt); });
     fc++; if (fc > 3) introAcc += dt; if (fc === 4) cv.classList.add('rd');
     var intro = Math.min(1, introAcc / 2.4); camera.position.z = 3.8 + (1 - intro * intro * (3 - 2 * intro)) * 1.8;
     renderer.render(scene, camera);
   }
-  var introT = 0, fc = 0, introAcc = 0, lastR = 0, COARSE = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
+  var fW = 0, fH = 0, fR = 0, introT = 0, fc = 0, introAcc = 0, lastR = 0, COARSE = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
   function start() { if (running || !ready) return; running = true; fc = 0; introAcc = 0; try { cv.classList.remove('rd'); } catch (e) { } clock0 = introT = performance.now(); raf = requestAnimationFrame(frame); }
   function stop() { running = false; cancelAnimationFrame(raf); }
 

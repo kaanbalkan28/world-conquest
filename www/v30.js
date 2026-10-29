@@ -10,7 +10,7 @@
   var stage, renderer, scene, camera, globe, earth, cloudM, rafId = 0, last = 0, dirtyQ = 0, needPaint = true, lastSig = '';
   var OW = 2048, OH = 1024, LW = 1536, LH = 768, NW = 512, NH = 256, SCALE = 0.07;
   var ovC, ov, liftC, lift, reliefC, nsmall, nsx, nC, nx, nImg, topoH, ovTex, liftTex, normTex;
-  var vo = 0, vel = { x: 0, y: 0 }, focusQ = null, camZ = 3.4, zoomT = 3.4, ptrs = {}, down = null, pinch0 = 0, pinchA = null, pinchM = { x: 0, y: 0 };
+  var introStart = 0, introFrom = 3.4, introNext = false, vo = 0, vel = { x: 0, y: 0 }, focusQ = null, camZ = 3.4, zoomT = 3.4, ptrs = {}, down = null, pinch0 = 0, pinchA = null, pinchM = { x: 0, y: 0 };
   function X(tr, en) { return (typeof L !== 'undefined' && L == 'tr') ? tr : en; }
   function $$(i) { return document.getElementById(i); }
 
@@ -230,12 +230,13 @@
   function stepCamera(dt) {
     if (focusQ) { globe.quaternion.slerp(focusQ, Math.min(1, dt * 5)); if (globe.quaternion.angleTo(focusQ) < 0.002) focusQ = null; }
     else if (!down && (Math.abs(vel.x) > 0.05 || Math.abs(vel.y) > 0.05)) { rotateBy(vel.x, vel.y); vel.x *= 0.93; vel.y *= 0.93; }
-    camZ += (zoomT - camZ) * Math.min(1, dt * 8); camera.position.z = camZ;
+    if (introStart) { var _k = Math.max(0, Math.min(1, (performance.now() - introStart) / 1800)); camZ = introFrom + (zoomT - introFrom) * (1 - Math.pow(1 - _k, 3)); if (_k >= 1) introStart = 0; } else camZ += (zoomT - camZ) * Math.min(1, dt * 8);   /* V56: yeni oyunda küre uzaktan yaklaşır */
+     camera.position.z = camZ * (window.innerWidth > window.innerHeight ? 0.86 : 1);   /* V53: yatayda küre daha yakın */
     // savaş paneli açıkken görüntüyü panelin dışındaki alana kaydır (telefonda yukarı, geniş ekranda sola)
-    vo += (((typeof BSH !== 'undefined' && BSH) ? 1 : 0) - vo) * Math.min(1, dt * 6);
+    var _pn = window.innerWidth > window.innerHeight && document.getElementById('panel'); vo += ((((typeof BSH !== 'undefined' && BSH) || (_pn && _pn.offsetWidth > 0)) ? 1 : 0) - vo) * Math.min(1, dt * 6);
     var w = stage.clientWidth, h = stage.clientHeight;
     if (vo < 0.01) { if (camera.view && camera.view.enabled) camera.clearViewOffset(); }
-    else if (w && h) { var wide = window.innerWidth >= 900; camera.setViewOffset(w, h, wide ? vo * 205 : 0, wide ? 0 : vo * h * .19, w, h); }
+    else if (w && h) { var wide = window.innerWidth >= 900 || window.innerWidth > window.innerHeight; camera.setViewOffset(w, h, wide ? vo * (window.innerWidth > window.innerHeight && window.innerWidth < 900 ? -Math.min(205, w * 0.2) : 205) : 0, wide ? 0 : vo * h * .19, w, h); }
   }
   function focusOn(c, instant) {
     if (!c || !READY) return; var b = c.bb, lon = (b[0] + b[2]) / 2 * DEG, lat = (b[1] + b[3]) / 2 * DEG;
@@ -293,8 +294,17 @@
 
   /* ---------- Aç / kapat ---------- */
   function setBtn() { var b = $$('v30b'); if (b) { b.textContent = ON ? '2B' : '3B'; b.title = ON ? X('Düz harita', 'Flat map') : X('3B küre', '3D globe'); b.classList.toggle('on', ON); } }
+  function doIntro() {   /* V56: yeni oyunda küre uzaktan yaklaşır ve belirir */
+    try {
+      introFrom = zoomT * 2.7; camZ = introFrom; introStart = performance.now() + 350;
+      var cvs = renderer && renderer.domElement; if (!cvs) return;
+      cvs.style.transition = 'none'; cvs.style.opacity = '0'; void cvs.offsetWidth;
+      setTimeout(function () { cvs.style.transition = 'opacity 1.1s ease-out'; cvs.style.opacity = '1'; }, 350);
+    } catch (e) { }
+  }
   function show() {
     ON = true; setBtn(); $$('map').classList.add('v30on'); stage.style.display = 'block'; resize(); lastSig = ''; refresh(); focusHome(true);
+    if (introNext) { introNext = false; doIntro(); }
     last = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop);
   }
   function hide() { ON = false; setBtn(); $$('map').classList.remove('v30on'); stage.style.display = 'none'; if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } }
@@ -324,4 +334,5 @@
     if (DEFAULT_3D) setTimeout(window.v30Toggle, 600);
   }
   if (document.readyState === 'complete') setTimeout(addBtn, 0); else window.addEventListener('load', function () { setTimeout(addBtn, 0); });
+  try { var _ngI = window.newGame || newGame; newGame = function () { var r = _ngI.apply(this, arguments); try { if (ON && stage) doIntro(); else introNext = true; } catch (e) { } return r; }; } catch (e) { }
 })();
