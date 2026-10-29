@@ -19,7 +19,7 @@ jobs:
       - name: Yatay ekran kilidi
         run: |
           F=android/app/src/main/AndroidManifest.xml
-          grep -q screenOrientation $F || sed -i 's/<activity/<activity android:screenOrientation="sensorLandscape"/' $F
+          grep -q screenOrientation $F || sed -i 's/<activity/<activity android:screenOrientation="fullUser"/' $F
           grep -n screenOrientation $F
       - run: npx cap sync android
       - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
