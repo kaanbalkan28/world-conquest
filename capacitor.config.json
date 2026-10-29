@@ -1,0 +1,11 @@
+{
+  "appId": "com.worldconquest.game",
+  "appName": "World Conquest",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
