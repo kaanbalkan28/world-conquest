@@ -1,0 +1,11 @@
+/* V30 — 3B küre görünümü */
+#g3d{position:absolute;inset:0;z-index:2;background:#02040a;touch-action:none}
+#g3d canvas{display:block;width:100%;height:100%}
+#map.v30on>svg,#map.v30on #wwater{visibility:hidden}
+#v30b{font-size:13px;font-weight:800;letter-spacing:.02em}
+#v30b.on{background:#f5b53ccc;color:#1a1204}
+#v30b.ld{opacity:.55;animation:v30p 1s ease-in-out infinite alternate}
+@keyframes v30p{to{opacity:.95}}
+
+#v30b{display:none!important}
+#intent24,#fact23.intent24{display:none!important}
